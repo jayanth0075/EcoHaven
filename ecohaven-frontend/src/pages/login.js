@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import '../styles/auth.css';
 
 const Login = () => {
-  const [currentForm, setCurrentForm] = useState('login');
-  const [users, setUsers] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [loading, setLoading] = useState({});
-  const [formData, setFormData] = useState({
-    login: { email: '', password: '', rememberMe: false },
-    signup: { name: '', email: '', password: '', confirmPassword: '', acceptTerms: false }
-  });
-  const [errors, setErrors] = useState({});
-  const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: [] });
-  const [showPasswords, setShowPasswords] = useState({});
+    const [currentForm, setCurrentForm] = useState('login');
+    const [users, setUsers] = useState([]);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [loading, setLoading] = useState({});
+    const [formData, setFormData] = useState({
+      login: { email: '', password: '', rememberMe: false },
+      signup: { name: '', email: '', password: '', confirmPassword: '', acceptTerms: false }
+    });
+    const [errors, setErrors] = useState({});
+    const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: [] });
+    const [showPasswords, setShowPasswords] = useState({});
 
   // Inline styles
   const styles = {
@@ -660,7 +662,7 @@ const Login = () => {
   );
 
   if (showSuccess && currentUser) {
-    const { color, text, score } = getPasswordStrengthDetails();
+    // Password strength details are not used in the current view
 
     return (
       <div style={styles.container}>
@@ -863,11 +865,10 @@ const Login = () => {
             </button>
 
             <div style={styles.forgotPassword}>
-              <a
-                href="#"
+              <button
+                type="button"
                 style={styles.forgotPasswordLink}
-                onClick={(e) => {
-                  e.preventDefault();
+                onClick={() => {
                   const email = prompt('Please enter your email address:');
                   if (email) {
                     showNotification('Password reset link sent to your email!', 'success');
@@ -875,7 +876,7 @@ const Login = () => {
                 }}
               >
                 Forgot your password?
-              </a>
+              </button>
             </div>
           </form>
         )}
@@ -1013,7 +1014,7 @@ const Login = () => {
                 </span>
               </div>
               <label style={styles.checkboxLabel} htmlFor="accept-terms">
-                I agree to the <a href="#" style={{ color: '#667eea', textDecoration: 'none', fontWeight: '500' }}>Terms of Service</a> and <a href="#" style={{ color: '#667eea', textDecoration: 'none', fontWeight: '500' }}>Privacy Policy</a>
+                I agree to the <Link to="/terms" style={{ color: '#667eea', textDecoration: 'none', fontWeight: '500' }}>Terms of Service</Link> and <Link to="/privacy" style={{ color: '#667eea', textDecoration: 'none', fontWeight: '500' }}>Privacy Policy</Link>
               </label>
             </div>
             {errors['signup-acceptTerms'] && (

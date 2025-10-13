@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
 import '../styles/feed.css';
@@ -6,8 +6,16 @@ import '../styles/feed.css';
 const Feed = () => {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [newPost, setNewPost] = useState({ title: '', content: '', tags: [] });
+    const [newPost, setNewPost] = useState({ 
+        title: '', 
+        content: '', 
+        tags: [], 
+        media: null,
+        mediaPreview: null,
+        mediaType: null 
+    });
     const [showCreatePost, setShowCreatePost] = useState(false);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         fetchPosts();
@@ -37,15 +45,74 @@ const Feed = () => {
         }
     };
 
+    const handleMediaChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Check if file is an image or video
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+
+        if (isImage || isVideo) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                setNewPost(prev => ({
+                    ...prev,
+                    media: file,
+                    mediaPreview: reader.result,
+                    mediaType: isImage ? 'image' : 'video'
+                }));
+            };
+            reader.readAsDataURL(file);
+        } else {
+            alert('Please upload only images or videos');
+        }
+    };
+
+    const handleRemoveMedia = () => {
+        setNewPost(prev => ({
+            ...prev,
+            media: null,
+            mediaPreview: null,
+            mediaType: null
+        }));
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     const handleCreatePost = async (e) => {
         e.preventDefault();
         try {
-            const response = await api.post('/community/posts/', newPost);
+            const formData = new FormData();
+            formData.append('title', newPost.title);
+            formData.append('content', newPost.content);
+            if (newPost.tags.length > 0) {
+                formData.append('tags', JSON.stringify(newPost.tags));
+            }
+            if (newPost.media) {
+                formData.append('media', newPost.media);
+            }
+
+            const response = await api.post('/community/posts/', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }
+            });
+            
             setPosts([response.data, ...posts]);
-            setNewPost({ title: '', content: '', tags: [] });
+            setNewPost({ 
+                title: '', 
+                content: '', 
+                tags: [],
+                media: null,
+                mediaPreview: null,
+                mediaType: null
+            });
             setShowCreatePost(false);
         } catch (error) {
             console.error('Error creating post:', error);
+            alert('Failed to create post. Please try again.');
         }
     };
 
@@ -109,13 +176,66 @@ const Feed = () => {
                                     value={newPost.title}
                                     onChange={(e) => setNewPost({...newPost, title: e.target.value})}
                                     required
+                                    className="post-input"
                                 />
                                 <textarea
                                     placeholder="What's your eco story today?"
                                     value={newPost.content}
                                     onChange={(e) => setNewPost({...newPost, content: e.target.value})}
                                     required
+                                    className="post-textarea"
                                 />
+                                
+                                <div className="media-upload-section">
+                                    <input
+                                        type="file"
+                                        accept="image/*,video/*"
+                                        onChange={handleMediaChange}
+                                        ref={fileInputRef}
+                                        style={{ display: 'none' }}
+                                        id="media-upload"
+                                    />
+                                    <label htmlFor="media-upload" className="media-upload-button">
+                                        📸 Add Photo or Video
+                                    </label>
+                                    
+                                    {newPost.mediaPreview && (
+                                        <div className="media-preview">
+                                            {newPost.mediaType === 'image' ? (
+                                                <img 
+                                                    src={newPost.mediaPreview} 
+                                                    alt="Preview" 
+                                                    className="media-preview-content"
+                                                />
+                                            ) : (
+                                                <video 
+                                                    src={newPost.mediaPreview} 
+                                                    className="media-preview-content"
+                                                    controls
+                                                />
+                                            )}
+                                            <button 
+                                                type="button"
+                                                className="remove-media-button"
+                                                onClick={handleRemoveMedia}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                <input
+                                    type="text"
+                                    placeholder="Add tags (comma separated)"
+                                    value={newPost.tags.join(', ')}
+                                    onChange={(e) => setNewPost({
+                                        ...newPost,
+                                        tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag)
+                                    })}
+                                    className="post-input"
+                                />
+                                
                                 <div className="modal-actions">
                                     <button type="button" onClick={() => setShowCreatePost(false)}>
                                         Cancel
@@ -173,8 +293,19 @@ const Feed = () => {
                                     </div>
                                 )}
 
-                                {post.image && (
-                                    <img src={post.image} alt="Post" className="post-image" />
+                                {post.media && (
+                                    <div className="post-media">
+                                        {post.mediaType === 'image' ? (
+                                            <img src={post.media} alt="Post content" className="post-media-content" />
+                                        ) : (
+                                            <video 
+                                                src={post.media} 
+                                                className="post-media-content" 
+                                                controls
+                                                playsInline
+                                            />
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
